@@ -1,50 +1,66 @@
 package com.example.ivc_starter.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.example.ivc_starter.config.JwtUtil;
+import com.example.ivc_starter.entity.Role;
+import com.example.ivc_starter.entity.User;
 import com.example.ivc_starter.entity.dto.AuthResponse;
 import com.example.ivc_starter.entity.dto.LoginRequest;
-import com.example.ivc_starter.service.CustomUserDetailsService;
+import com.example.ivc_starter.repository.RoleRepository;
+import com.example.ivc_starter.repository.UserRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authManager;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Authentication authentication = authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+    @PostMapping("/register")
+    public String register(@RequestParam String username,
+            @RequestParam String password,
+            @RequestParam String role) {
+        Role r = roleRepository.findByName(role.toUpperCase())
+                .orElseThrow(() -> new RuntimeException("Role not found"));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Set.of(r));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
-        String token = jwtUtil.generateToken(userDetails);
-
-        return ResponseEntity.ok(new AuthResponse(token));
+        userRepository.save(user);
+        return "User registered successfully";
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        // Với JWT, logout thường được handle ở client hoặc sử dụng token blacklist
-        return ResponseEntity.ok("Logged out successfully (client side)");
+    @Operation(summary = "Đăng nhập và lấy JWT Token")
+    @PostMapping("/login")
+    public AuthResponse login(
+            @RequestParam String username,
+            @RequestParam String password) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid username or password");
+        }
+
+        String token = jwtUtil.generateToken(
+                org.springframework.security.core.userdetails.User
+                        .withUsername(user.getUsername())
+                        .password(user.getPassword())
+                        .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
+                        .build());
+
+        return new AuthResponse(token);
     }
 }
-

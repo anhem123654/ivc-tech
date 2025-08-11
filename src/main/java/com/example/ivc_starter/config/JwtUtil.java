@@ -12,7 +12,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET = "?>$@I`TG0}I+*t6a)e0)9[7O!n@<*dq#g)&'N_.R'gK:[WvrQh(pp;w'(GXF0F6"; 
+    private static final String SECRET = "?>$@I`TG0}I+*t6a)e0)9[7O!n@<*dq#g)&'N_.R'gK:[WvrQh(pp;w'(GXF0F6";
     private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
     private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 1 day
@@ -37,7 +37,7 @@ public class JwtUtil {
 
     public boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
