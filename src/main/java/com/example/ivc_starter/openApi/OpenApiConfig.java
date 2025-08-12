@@ -43,7 +43,7 @@ public class OpenApiConfig {
     public GroupedOpenApi groupOpenApi() {
         return GroupedOpenApi.builder()
                 .group("api-services")
-                .packagesToScan("com.example.ivc_starter.controller")
+                .packagesToScan("com.example.ivc_starter.controllers")
                 .build();
     }
 }
