@@ -9,5 +9,4 @@ public class IvcStarterApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(IvcStarterApplication.class, args);
 	}
-
 }
